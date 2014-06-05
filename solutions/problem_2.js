@@ -61,7 +61,7 @@ makeDeque.isValidOffset = function(num, size) {
 
 makeDeque.cut = function(offset) {
   var size = this.queue.length,
-      half = size / 2,
+      half = Math.floor(size / 2),
       top;
 
   if (!this.isValidOffset(offset, size)) throw new Error('Invalid offset');
@@ -73,7 +73,7 @@ makeDeque.cut = function(offset) {
       return this.queue = this.queue.concat(top);
     }
     // queue size is odd
-    top = this.queue.splice(0, Math.floor(half) + 1);
+    top = this.queue.splice(0, half + 1);
     return this.queue = this.queue.concat();
   }
 
