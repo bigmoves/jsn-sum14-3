@@ -15,8 +15,10 @@ function makeDeque(values) {
   var deque = {};
   // create a copy of the array of values
   deque.queue = values.slice();
+  deque.stash = [];
   deque.top = makeDeque.top;
   deque.bottom = makeDeque.bottom;
+  deque.canPush = makeDeque.canPush;
   deque.push = makeDeque.push;
   deque.pop = makeDeque.pop;
   deque.shift = makeDeque.shift;
@@ -37,31 +39,59 @@ makeDeque.bottom = function() {
   return this.queue[this.queue.length - 1];
 };
 
-makeDeque.push = function(val) {
-  return this.queue.push(val);
+makeDeque.canPush = function(val) {
+  var idx;
+  this.stash.forEach(function(value, i) {
+    // check for primitives and objects
+    if (typeof value === 'object' && equal(val, value)) {
+      idx = i;
+    } else if (val === value) {
+      idx = i;
+    }
+  });
+  // not in stash, must be in the queue already or was not in the
+  // original deque
+  if (idx === undefined) return false;
+  // remove val from the stash
+  this.stash.splice(idx, 1);
+  return true;
 };
 
-makeDeque.pop = function(val) {
-  return this.queue.pop(val);
+makeDeque.push = function(val) {
+  if (this.canPush(val)) {
+    return this.queue.push(val);
+  }
+  throw new Error('Item is already in the deque or is not part of the original deque');
+};
+
+makeDeque.pop = function() {
+  var lastItem = this.queue.pop();
+  if (lastItem) this.stash.push(lastItem);
+  return lastItem;
 };
 
 makeDeque.shift = function() {
-  return this.queue.shift();
+  var firstItem = this.queue.shift();
+  if (firstItem) this.stash.push(firstItem);
+  return firstItem;
 };
 
 makeDeque.unshift = function(val) {
-  return this.queue.unshift(val);
+  if (this.canPush(val)) {
+    return this.queue.unshift(val);
+  }
+  throw new Error('Item is already in the deque or is not part of the original deque');
 };
 
 makeDeque.isValidOffset = function(num, size) {
   if (num && !Number.isInteger(num)) return false;
   if (num && Math.abs(num) > (size / 2)) return false;
   return true;
-}
+};
 
 makeDeque.cut = function(offset) {
   var size = this.queue.length,
-      half = Math.floor(size / 2),
+      middle = Math.floor(size / 2),
       top;
 
   if (!this.isValidOffset(offset, size)) throw new Error('Invalid offset');
@@ -69,21 +99,21 @@ makeDeque.cut = function(offset) {
   if (!offset) {
     // queue size is even
     if (size % 2 === 0) {
-      top = this.queue.splice(0, half);
+      top = this.queue.splice(0, middle);
       return this.queue = this.queue.concat(top);
     }
     // queue size is odd
-    top = this.queue.splice(0, half + 1);
+    top = this.queue.splice(0, middle + 1);
     return this.queue = this.queue.concat();
   }
 
   // positive integer
   if (offset > 0) {
-    top = this.queue.splice(0, half - offset);
+    top = this.queue.splice(0, middle - offset);
     return this.queue = this.queue.concat(top);
   }
   // negative integer
-  top = this.queue.splice(0, half + offset);
+  top = this.queue.splice(0, middle + offset);
   return this.queue = this.queue.concat(top);
 };
 
@@ -106,7 +136,7 @@ makeDeque.shuffle = function(array) {
   }
 
   return this.queue;
-}
+};
 
 // Testing
 
@@ -190,4 +220,5 @@ deck.shuffle();
 var ids = deck.map(function(x) { return x.id });
 var names = deck.map(function(x) { return x.name() });
 
-
+// Part f
+// updated push, pop, shift, and unshift methods above
